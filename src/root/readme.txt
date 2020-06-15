@@ -1,0 +1,1 @@
+이 곳은 combineReducr를 이용해 합치고 all함수를 이용해 saga를 합쳐주는 index.js입니다.
