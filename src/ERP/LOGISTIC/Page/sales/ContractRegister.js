@@ -74,6 +74,12 @@ const gridFrameStyle = {
 // 견적 상세는 '수주가능견적조회' 버튼을 클릭했을 때, 나오는 데이터의 '견적일련번호'를 클릭하면 해당 번호의 견적상세 데이터가 하단에 나온다 !
 //
 const estimateDetail = [
+  {
+    headerName: "",
+    checkboxSelection: true,
+    width: 50,
+    headerCheckboxSelection: true,
+  },
   { headerName: "견적상세일련번호", field: "estimateDetailNo", width: 170 },
   { headerName: "견적일련번호", field: "estimateNo", width: 170 },
   {
@@ -82,26 +88,58 @@ const estimateDetail = [
     width: 170,
   },
 
-  { headerName: "품목명", field: "itemName", width: 170 },
-  { headerName: "단위", field: "unitOfContract", width: 170 },
+  {
+    headerName: "품목명",
+    field: "itemName",
+    width: 170,
+    editable: true,
+    cellEditor: "itemnameEditor",
+  },
+  { headerName: "단위", field: "unitOfEstimate", width: 170, editable: true },
   {
     headerName: "납기일",
-    field: "dueDateOfContrct",
+    field: "dueDateOfEstimate",
     width: 170,
+    editable: true,
+    cellEditor: "dueDateEditor",
   },
   {
     headerName: "견적수량",
     field: "estimateAmount",
     width: 170,
+    editable: true,
+    cellEditor: "estimateAmountEditor",
   },
   {
     headerName: "견적단가",
     field: "unitPriceOfEstimate",
     width: 170,
+    cellEditor: "unitPriceOfEstimateEditor",
   },
-  { headerName: "합계액", field: "sumPriceOfEstimate", width: 150 },
+  {
+    headerName: "합계액",
+    field: "sumPrice",
+    width: 150,
+    editable: true,
+    cellEditor: "sumPriceEditor",
+  },
 
   { headerName: "비고", field: "description", width: 150, editable: true },
+];
+
+const addDetailrow = [
+  {
+    estimateDetailNo: "",
+    estimateNo: "",
+    itemCode: "",
+    itemName: "",
+    unitOfEstimate: "",
+    dueDateOfEstimate: "",
+    estimateAmount: "",
+    unitPriceOfEstimate: "?",
+    sumPriceOfEstimate: "",
+    description: "",
+  },
 ];
 
 //=============================================================================//
@@ -154,16 +192,36 @@ export default class ContractRegister extends Component {
       width: 150,
       editable: true,
       cellEditor: "ContractCellSelect",
-      valueSetter: params => {
-        console.log("setter  - params>>", params.data);
+      valueFormatter: e => {
+        console.log("=====valueFormatter() 호출 =======");
+        console.log("e>>", e);
+        if (e.data.status === "normal") {
+          e.data.contractStatus = "일반수주";
+        }
+        if (e.data.status === "urgent") {
+          e.data.contractStatus = "긴급수주";
+        }
+        return e.data.contractStatus;
       },
-
       valueGetter: params => {
-        console.log("valuegetter");
-        console.log("valueGetter params>", JSON.stringify(params.data));
+        console.log("===== valuegetter() 호출 ======");
+        console.log(
+          "valueGetter params.data.contractStatus>",
+          JSON.stringify(params.data.contractStatus),
+        );
+        // console.log("this.state.statusName >> ", this.state.statusName); // 안나온다.
 
-        return this.state.statusName;
+        return params.data.contractStatus;
       },
+      /*  valueSetter: params => {
+        //setter 에 오지를 않음.
+        console.log("===== value setter () 호출 =====");
+
+        console.log("setter  - params>>", params.data);
+        console.log("setter - this.state.statusName>> ", this.state.statusName);
+
+        return (params.data.contractStatus = this.state.statusName);
+      }, */
     },
 
     {
@@ -194,7 +252,7 @@ export default class ContractRegister extends Component {
     { headerName: "비고", field: "description", width: 150, editable: true },
   ];
 
-  statusChange = e => {
+  /* statusChange = e => {
     this.setState({
       statusName: e.target.value,
     });
@@ -205,26 +263,35 @@ export default class ContractRegister extends Component {
       this.state.statusName,
     );
     return this.state.statusName;
+  }; */
+
+  statusChange = e => {
+    console.log("==== statusChange() 호출  ====");
+    console.log("e.target.value>>", e.target.value);
+
+    this.setState({ statusName: e.target.value });
+    console.log("this.state.statusName>>", this.state.statusName);
   };
 
   contractCellSelect = () => (
     <div>
-      <InputLabel id="demo-mutiple-name-label">수주유형</InputLabel>
+      <InputLabel id="demo-mutiple-name-label" value={this.state.statusName}>
+        수주유형
+      </InputLabel>
       <Select
         /* labelId="demo-simple-select-helper-label" */
         id="demo-simple-select-helper"
-        onChange={this.statusChange}
+        onChange={e => {
+          this.setState({ statusName: e.target.value });
+        }}
+        value={this.state.statusName}
       >
-        <MenuItem id="general" value={this.state.statusName}>
-                      일반수주           
-        </MenuItem>
-                  
-        <MenuItem id="urgent" value={this.state.statusName}>
-                      긴급수주     
-        </MenuItem>
+        <option value="일반수주">일반수주</option>
+        <option value="긴급수주">긴급수주</option>
       </Select>
     </div>
   );
+
   //----------- life cycle method ---------------
   // componentDidUpdate : useEffect 와 같은 기능.
   // 메서드는 렌더링 후에 실행이 되는데 값을 렌더링 하기 전의 값(snapshot)을 가져올 수 있다.
@@ -271,7 +338,30 @@ export default class ContractRegister extends Component {
         return;
       }
     };
+    this.cellClick = cell => {
+      if (!cell.value === "") {
+        console.log("cell click() 호출");
+        console.log("cell.value >> ", cell.value);
 
+        if (cell.value.toString().includes("ES")) {
+          let estimateno = cell.value;
+
+          axios
+            .post(
+              "http://localhost:8282/logi/business/findEstimateDetail",
+              estimateno,
+            )
+            .then(response =>
+              this.setState({
+                rowdetailData: response.data,
+              }),
+            );
+          this.setState({
+            deletebuttonstatus: false,
+          });
+        }
+      }
+    };
     /*  this.contractSubmit = e => {
       console.log("===============contractSubmit()==================");
       
@@ -362,7 +452,7 @@ export default class ContractRegister extends Component {
               columnDefs={this.headerName}
               //onCellEditingStarted="popup"
               sortable="true"
-              /*onCellClicked={cellClick} */
+              onCellClicked={this.cellClick}
               rowData={this.state.rowData}
               frameworkComponents={{
                 ContractCellSelect: this.contractCellSelect,
@@ -384,7 +474,16 @@ export default class ContractRegister extends Component {
               onGridReady={this.gridReady}
               className={theme}
               rowSelection={single}
+              rowData={this.state.rowdetailData}
               columnDefs={estimateDetail} /*rowData={this.rowData} */
+              frameworkComponents={{
+                itemName: this.itemNameEditor,
+                dueDate: this.dueDateEditor,
+                estimateAmount: this.estimateAmountEditor,
+                unitPriceOfEstimate: this.unitPriceOfEstimateEditor,
+                sumPrice: this.sumPriceEditor,
+                // itemnameList: this.itemnameList,
+              }}
             />
           </div>
         </div>
