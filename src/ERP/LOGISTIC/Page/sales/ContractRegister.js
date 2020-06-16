@@ -70,63 +70,6 @@ const gridFrameStyle = {
 
 //==============================================================//
 
-// --------------------------------- 견적상세------------------------------------
-// 견적 상세는 '수주가능견적조회' 버튼을 클릭했을 때, 나오는 데이터의 '견적일련번호'를 클릭하면 해당 번호의 견적상세 데이터가 하단에 나온다 !
-//
-const estimateDetail = [
-  {
-    headerName: "",
-    checkboxSelection: true,
-    width: 50,
-    headerCheckboxSelection: true,
-  },
-  { headerName: "견적상세일련번호", field: "estimateDetailNo", width: 170 },
-  { headerName: "견적일련번호", field: "estimateNo", width: 170 },
-  {
-    headerName: "품목코드",
-    field: "itemCode",
-    width: 170,
-  },
-
-  {
-    headerName: "품목명",
-    field: "itemName",
-    width: 170,
-    editable: true,
-    cellEditor: "itemnameEditor",
-  },
-  { headerName: "단위", field: "unitOfEstimate", width: 170, editable: true },
-  {
-    headerName: "납기일",
-    field: "dueDateOfEstimate",
-    width: 170,
-    editable: true,
-    cellEditor: "dueDateEditor",
-  },
-  {
-    headerName: "견적수량",
-    field: "estimateAmount",
-    width: 170,
-    editable: true,
-    cellEditor: "estimateAmountEditor",
-  },
-  {
-    headerName: "견적단가",
-    field: "unitPriceOfEstimate",
-    width: 170,
-    cellEditor: "unitPriceOfEstimateEditor",
-  },
-  {
-    headerName: "합계액",
-    field: "sumPrice",
-    width: 150,
-    editable: true,
-    cellEditor: "sumPriceEditor",
-  },
-
-  { headerName: "비고", field: "description", width: 150, editable: true },
-];
-
 const addDetailrow = [
   {
     estimateDetailNo: "",
@@ -139,6 +82,7 @@ const addDetailrow = [
     unitPriceOfEstimate: "?",
     sumPriceOfEstimate: "",
     description: "",
+    estimateno: "",
   },
 ];
 
@@ -162,11 +106,14 @@ export default class ContractRegister extends Component {
       endDate: "",
       estimateGridApi: [],
       rowData: [],
+      rowDetailData: [],
       // contractStatus: ["일반수주", "긴급수주"],
       contractType: "",
       status1: "일반수주",
       status2: "긴급수주",
       statusName: "",
+      selectedData: [],
+      selectable: false,
       //   value: this.props,
     };
 
@@ -174,12 +121,12 @@ export default class ContractRegister extends Component {
   }
 
   headerName = [
-    {
+    /*   {
       headerName: "",
       checkboxSelection: true,
       width: 50,
       headerCheckboxSelection: true,
-    },
+    }, */
     {
       headerName: "견적일련번호",
       field: "estimateNo",
@@ -252,6 +199,63 @@ export default class ContractRegister extends Component {
     { headerName: "비고", field: "description", width: 150, editable: true },
   ];
 
+  // --------------------------------- 견적상세------------------------------------
+  // 견적 상세는 '수주가능견적조회' 버튼을 클릭했을 때, 나오는 데이터의 '견적일련번호'를 클릭하면 해당 번호의 견적상세 데이터가 하단에 나온다 !
+  //
+  estimateDetail = [
+    {
+      headerName: "",
+      checkboxSelection: true,
+      width: 50,
+      headerCheckboxSelection: true,
+    },
+    { headerName: "견적상세일련번호", field: "estimateDetailNo", width: 170 },
+    { headerName: "견적일련번호", field: "estimateNo", width: 170 },
+    {
+      headerName: "품목코드",
+      field: "itemCode",
+      width: 170,
+    },
+
+    {
+      headerName: "품목명",
+      field: "itemName",
+      width: 170,
+      editable: true,
+      cellEditor: "itemnameEditor",
+    },
+    { headerName: "단위", field: "unitOfEstimate", width: 170, editable: true },
+    {
+      headerName: "납기일",
+      field: "dueDateOfEstimate",
+      width: 170,
+      editable: true,
+      cellEditor: "dueDateEditor",
+    },
+    {
+      headerName: "견적수량",
+      field: "estimateAmount",
+      width: 170,
+      editable: true,
+      cellEditor: "estimateAmountEditor",
+    },
+    {
+      headerName: "견적단가",
+      field: "unitPriceOfEstimate",
+      width: 170,
+      cellEditor: "unitPriceOfEstimateEditor",
+    },
+    {
+      headerName: "합계액",
+      field: "sumPrice",
+      width: 150,
+      editable: true,
+      cellEditor: "sumPriceEditor",
+    },
+
+    { headerName: "비고", field: "description", width: 150, editable: true },
+  ];
+
   /* statusChange = e => {
     this.setState({
       statusName: e.target.value,
@@ -303,7 +307,49 @@ export default class ContractRegister extends Component {
 
   // componentDidMount: 렌더링 된 후
   componentDidMount() {
-    //-----------------------axios 사용해서 서버에 값 보내는 기능------------------------
+    //-------------------견적 선택해서 견적상세 나오게 함----------------------
+    this.rowClicked = e => {
+      console.log("row click 여긴 오나");
+      console.log("row event -->", e);
+
+      if (e.data.estimateNo !== "") {
+        console.log("row clicked() 은 null 이아님 e.data>", e.data.estimateNo);
+
+        this.setState({
+          selectedData: e.data,
+          selectable: e.node.selectable,
+        });
+
+        this.estimateno = e.data.estimateNo;
+        let url =
+          "http://localhost:8282/logi/logistics/sales/estimateDetail?estimateNo=" +
+          this.estimateno;
+        axios
+          .post(url)
+          .then(response => {
+            //console.log("response>>", response);
+
+            this.setState({
+              rowDetailData: response.data.gridRowJson,
+            });
+            console.log(
+              "@@@@@@this.state.rowDetailData >> ",
+              this.state.rowDetailData,
+            );
+
+            return this.state.rowDetailData;
+          })
+          .catch((e, info) => {
+            console.log("견적상세 axios하는중에 에러 >", e);
+            console.log(" error info >> ", info);
+          });
+        /*  this.setState({
+        deletebuttonstatus: false,
+      }); */
+      }
+    };
+
+    //-----------------------수주 가능한 견적 조회------------------------
     console.log("렌더링 됨");
     this.searchEstimate = () => {
       let startd = this.state.startdate;
@@ -331,6 +377,9 @@ export default class ContractRegister extends Component {
             this.setState({
               rowData: response.data.gridRowJson,
             });
+            console.log("@@@@@@@@ this.state.rowData >> ", this.state.rowData);
+
+            return this.state.rowData;
           })
           .catch(err => console.log("수주가능한 견적 가져오다가 에러"));
       } else {
@@ -338,36 +387,26 @@ export default class ContractRegister extends Component {
         return;
       }
     };
-    this.cellClick = cell => {
-      if (!cell.value === "") {
-        console.log("cell click() 호출");
-        console.log("cell.value >> ", cell.value);
 
-        if (cell.value.toString().includes("ES")) {
-          let estimateno = cell.value;
-
-          axios
-            .post(
-              "http://localhost:8282/logi/business/findEstimateDetail",
-              estimateno,
-            )
-            .then(response =>
-              this.setState({
-                rowdetailData: response.data,
-              }),
-            );
-          this.setState({
-            deletebuttonstatus: false,
-          });
-        }
-      }
-    };
     /*  this.contractSubmit = e => {
       console.log("===============contractSubmit()==================");
       
       this.props.onSubmit(this.state.statusName);
     }; */
 
+    // =====================수주 등록하기===================
+    this.contractRegist = e => {
+      if (this.state.selectable === false) {
+        alert("등록할 견적을 선택해 주세요");
+        console.log("selectable이 false인가??>>", this.state.selectable);
+        return;
+      }
+      console.log("=========== contract regist() 호출 ============");
+      console.log("this.state.selectedData>> ", this.state.selectedData);
+      console.log("this.state.selectable >> ", this.state.selectable);
+      let url="http://localhost:8282/logi/logistics/sales/addNewContract";
+      
+    };
     //=================================================================================//
   }
 
@@ -398,6 +437,10 @@ export default class ContractRegister extends Component {
     this.setState({
       estimateGridApi: params.api,
     });
+    console.log(
+      "grid ready() 호출  - estimateGridApi::",
+      this.state.estimateGridApi,
+    );
   };
 
   //======================================================//
@@ -436,7 +479,8 @@ export default class ContractRegister extends Component {
           </Button>
           <Button
             className="registContract"
-            style={contractRegistStyle} /* onClick={contractRegist} */
+            style={contractRegistStyle}
+            onClick={this.contractRegist}
           >
             수주 등록하기
           </Button>
@@ -446,13 +490,13 @@ export default class ContractRegister extends Component {
         <div className="contract_body1">
           <div className={"ag-theme-material"} style={gridFrameStyle}>
             <AgGridReact
-              /*  ref={g => (this.grid = g)} */
+              ref={g => (this.grid = g)}
               onGridReady={this.gridReady}
               rowSelection={single}
               columnDefs={this.headerName}
               //onCellEditingStarted="popup"
               sortable="true"
-              onCellClicked={this.cellClick}
+              onRowClicked={this.rowClicked}
               rowData={this.state.rowData}
               frameworkComponents={{
                 ContractCellSelect: this.contractCellSelect,
@@ -474,8 +518,8 @@ export default class ContractRegister extends Component {
               onGridReady={this.gridReady}
               className={theme}
               rowSelection={single}
-              rowData={this.state.rowdetailData}
-              columnDefs={estimateDetail} /*rowData={this.rowData} */
+              rowData={this.state.rowDetailData}
+              columnDefs={this.estimateDetail} /*rowData={this.rowData} */
               frameworkComponents={{
                 itemName: this.itemNameEditor,
                 dueDate: this.dueDateEditor,
