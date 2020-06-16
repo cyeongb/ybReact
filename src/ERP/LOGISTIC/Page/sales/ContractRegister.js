@@ -115,6 +115,8 @@ export default class ContractRegister extends Component {
       selectedData: [],
       selectable: false,
       //   value: this.props,
+      inchargeCode: "",
+      contractUrl: "http://localhost:8282/logi/logistics/sales/addNewContract",
     };
 
     //=================================================//
@@ -308,7 +310,7 @@ export default class ContractRegister extends Component {
   // componentDidMount: 렌더링 된 후
   componentDidMount() {
     //-------------------견적 선택해서 견적상세 나오게 함----------------------
-    this.rowClicked = e => {
+    this.rowClicked = async e => {
       console.log("row click 여긴 오나");
       console.log("row event -->", e);
 
@@ -318,13 +320,14 @@ export default class ContractRegister extends Component {
         this.setState({
           selectedData: e.data,
           selectable: e.node.selectable,
+          inchargeCode: e.data.personCodeInCharge,
         });
 
         this.estimateno = e.data.estimateNo;
         let url =
           "http://localhost:8282/logi/logistics/sales/estimateDetail?estimateNo=" +
           this.estimateno;
-        axios
+        await axios
           .post(url)
           .then(response => {
             //console.log("response>>", response);
@@ -395,17 +398,88 @@ export default class ContractRegister extends Component {
     }; */
 
     // =====================수주 등록하기===================
-    this.contractRegist = e => {
+    this.contractRegist = async e => {
+      let today = new Date();
       if (this.state.selectable === false) {
         alert("등록할 견적을 선택해 주세요");
         console.log("selectable이 false인가??>>", this.state.selectable);
         return;
       }
-      console.log("=========== contract regist() 호출 ============");
-      console.log("this.state.selectedData>> ", this.state.selectedData);
-      console.log("this.state.selectable >> ", this.state.selectable);
-      let url="http://localhost:8282/logi/logistics/sales/addNewContract";
-      
+      if (this.state.selectable === true) {
+        let s = window.confirm(
+          this.state.selectedData.estimateNo + "견적을 등록 하시겠습니까?",
+        );
+        if (s === false) {
+          alert("취소함");
+          console.log("견적 등록 취소 ");
+          return;
+        }
+
+        console.log("=========== contract regist() 호출 ============");
+        let date =
+          today.getFullYear() +
+          "-" +
+          parseInt(today.getMonth() + 1) +
+          "-" +
+          today.getDate();
+        let selecteddata = JSON.stringify(this.state.selectedData);
+        let charge = this.state.inchargeCode;
+        console.log("수주등록  - 선택된 데이터 >> ", selecteddata);
+        console.log(
+          "수주등록  - 선택됨? this.state.selectable >> ",
+          this.state.selectable,
+        );
+        console.log("수주등록  -  오늘 날짜  --->", date);
+        console.log("수주등록  -  담당자코드 >>", charge);
+        //let url = "http://localhost:8282/logi/logistics/sales/addNewContract";
+
+        await axios
+          .put(this.state.contractUrl, {
+            batchList: selecteddata,
+            contractDate: date,
+            personCodeInCharge: charge,
+            headers: { "Access-Control-Allow-Origin": "*" }, //cors보안
+          })
+          /*   .options("/", (req, res) => {
+            res.header("Access-Control-Allow-Origin", "*");
+            res.header(
+              "Access-Control-Allow-Methods",
+              "GET,PUT,POST,DELETE,OPTIONS",
+            );
+            res.header(
+              "Access-Control-Allow-Headers",
+              "Content-Type, Authorization, Content-Length, X-Requested-With",
+            );
+            res.send();
+          }) */
+          .then(response => {
+            console.log("response >> ", response);
+          })
+          .catch(error => {
+            console.log("견적 수주로 등록하다가 에러 >> ", error);
+          });
+        /* await axios
+          .put({
+            url: this.state.contractUrl,
+            header: {
+              "Content-Type": "application/json",
+            },
+            data: selecteddata,
+            today,
+            charge,
+          })
+          .then(response => {
+            console.log(
+              "@@@@@@@@@@@@ 수주 등록성공 >> ",
+              response.data.gridRowJson,
+            );
+          })
+          .catch(error => {
+            console.log("@@@@@@@@@@@ 수주 등록하다가 에러 >>", error);
+          }); */
+        alert("등록되었습니다");
+        //window.location.reload();
+      }
     };
     //=================================================================================//
   }
