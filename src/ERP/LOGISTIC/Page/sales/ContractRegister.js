@@ -20,6 +20,11 @@ import { useDispatch } from "react-redux";
 import InputLabel from "@material-ui/core/InputLabel";
 //import {ContractCellSelect} from "./ContractCellSelect";
 
+/* ########################  수        주         등        록        페       이       지    #################################################
+   ###########################################################################################################################################
+   ######## 등록한 견적 데이터들을 날짜별로 조회해서 해당 견적과 + 견적 상세 데이터를 batchList로 합쳐서 수주로 등록하는 기능을 하는 페이지. ##########
+   ###########################################################################################################################################*/
+
 //------------------------- 스타일 ---------------------
 const labelStyle = {
   color: "gray",
@@ -64,30 +69,6 @@ const gridFrameStyle = {
   backgroundColor: "gainsboro",
 };
 
-//====================================================================//
-
-// ------------------수주 가능한 견적 조회 그리드 헤더----------------------
-
-//==============================================================//
-
-const addDetailrow = [
-  {
-    estimateDetailNo: "",
-    estimateNo: "",
-    itemCode: "",
-    itemName: "",
-    unitOfEstimate: "",
-    dueDateOfEstimate: "",
-    estimateAmount: "",
-    unitPriceOfEstimate: "?",
-    sumPriceOfEstimate: "",
-    description: "",
-    estimateno: "",
-  },
-];
-
-//=============================================================================//
-
 //-----------------------const 선언 ----------------------------------
 const theme = "ag-theme-balham";
 const single = "single"; // row-selection이 single
@@ -95,33 +76,36 @@ const single = "single"; // row-selection이 single
 
 //====================================================================//
 
+// ========================== 수주 등록 class 시작 ===============================//
 export default class ContractRegister extends Component {
   constructor(props) {
     super(props);
 
-    //----------------------- state 초깃값 -------------
+    //----------------------- state initialize -------------------------------//
 
     this.state = {
-      startdate: "",
-      endDate: "",
-      estimateGridApi: [],
-      rowData: [],
-      rowDetailData: [],
-      // contractStatus: ["일반수주", "긴급수주"],
-      contractType: "",
+      startdate: "", //조회 시작날짜
+      endDate: "", // 조회 동료 날짜
+      estimateGridApi: [], //견적 그리드 api
+      rowData: [], //견적 행 데이터
+      rowDetailData: [], // 견적 상세 행 데이터
       status1: "일반수주",
       status2: "긴급수주",
-      statusName: "",
-      selectedData: [],
-      selectable: false,
-      //   value: this.props,
-      inchargeCode: "",
-      contractUrl: "http://localhost:8282/logi/logistics/sales/addNewContract",
+
+      statusName: "", // 수주 유형
+      selectedData: [], //클릭한 row데이터
+      selectedDetailData: [], // 클릭한 row의 상세 데이터
+      selectable: false, // 선택 여부
+      inchargeCode: "", //담당자 코드
+      contractUrl: "http://localhost:8282/logi/logistics/sales/addNewContract", //수주 등록 url
+      batchlist: [],
+      estimateList: [],
     };
 
-    //=================================================//
+    //==================================================================//
   }
 
+  //===================견적 조회 헤더 ============================//
   headerName = [
     /*   {
       headerName: "",
@@ -155,22 +139,12 @@ export default class ContractRegister extends Component {
       valueGetter: params => {
         console.log("===== valuegetter() 호출 ======");
         console.log(
-          "valueGetter params.data.contractStatus>",
+          "valueGetter  - params.data.contractStatus>",
           JSON.stringify(params.data.contractStatus),
         );
-        // console.log("this.state.statusName >> ", this.state.statusName); // 안나온다.
 
         return params.data.contractStatus;
       },
-      /*  valueSetter: params => {
-        //setter 에 오지를 않음.
-        console.log("===== value setter () 호출 =====");
-
-        console.log("setter  - params>>", params.data);
-        console.log("setter - this.state.statusName>> ", this.state.statusName);
-
-        return (params.data.contractStatus = this.state.statusName);
-      }, */
     },
 
     {
@@ -201,10 +175,10 @@ export default class ContractRegister extends Component {
     { headerName: "비고", field: "description", width: 150, editable: true },
   ];
 
-  // --------------------------------- 견적상세------------------------------------
+  // --------------------------------- 견적상세 헤더 ------------------------------------//
   // 견적 상세는 '수주가능견적조회' 버튼을 클릭했을 때, 나오는 데이터의 '견적일련번호'를 클릭하면 해당 번호의 견적상세 데이터가 하단에 나온다 !
   //
-  estimateDetail = [
+  estimateDetailHeader = [
     {
       headerName: "",
       checkboxSelection: true,
@@ -258,27 +232,20 @@ export default class ContractRegister extends Component {
     { headerName: "비고", field: "description", width: 150, editable: true },
   ];
 
-  /* statusChange = e => {
-    this.setState({
-      statusName: e.target.value,
-    });
-
-    //  console.log("statusChange - e.target.value>>", e.target.value);
-    console.log(
-      " statusChange - this.state.statusName>",
-      this.state.statusName,
-    );
-    return this.state.statusName;
-  }; */
-
+  // ---------------------수주 status onChange 함수--------------------//
   statusChange = e => {
     console.log("==== statusChange() 호출  ====");
-    console.log("e.target.value>>", e.target.value);
+    console.log("statusChange - e.target.value>>", e.target.value);
 
     this.setState({ statusName: e.target.value });
-    console.log("this.state.statusName>>", this.state.statusName);
+    console.log(
+      "statusChange - this.state.statusName>>",
+      this.state.statusName,
+    );
   };
 
+  // ------------ 수주 status 클릭하면 나오는 창 ------------------------//
+  // 원래 한 유형을 클릭하면 화면에 나오게 구현하고싶었으나..계속 값을 못가져와서 ㅜ3ㅜ 추후에 다시 손볼 예정
   contractCellSelect = () => (
     <div>
       <InputLabel id="demo-mutiple-name-label" value={this.state.statusName}>
@@ -298,7 +265,7 @@ export default class ContractRegister extends Component {
     </div>
   );
 
-  //----------- life cycle method ---------------
+  //===================================  life cycle method ==================================//
   // componentDidUpdate : useEffect 와 같은 기능.
   // 메서드는 렌더링 후에 실행이 되는데 값을 렌더링 하기 전의 값(snapshot)을 가져올 수 있다.
   componentDidUpdate(prevProps, prevState) {
@@ -307,7 +274,7 @@ export default class ContractRegister extends Component {
   }
   //==============================================//
 
-  // componentDidMount: 렌더링 된 후
+  // ===================== componentDidMount: 렌더링 된 후 ========================//
   componentDidMount() {
     //-------------------견적 선택해서 견적상세 나오게 함----------------------
     this.rowClicked = async e => {
@@ -321,6 +288,7 @@ export default class ContractRegister extends Component {
           selectedData: e.data,
           selectable: e.node.selectable,
           inchargeCode: e.data.personCodeInCharge,
+          selectedDetailData: this.state.rowDetailData[0],
         });
 
         this.estimateno = e.data.estimateNo;
@@ -337,10 +305,10 @@ export default class ContractRegister extends Component {
             });
             console.log(
               "@@@@@@this.state.rowDetailData >> ",
-              this.state.rowDetailData,
+              this.state.rowDetailData[0],
             );
 
-            return this.state.rowDetailData;
+            return this.state.rowDetailData[0];
           })
           .catch((e, info) => {
             console.log("견적상세 axios하는중에 에러 >", e);
@@ -354,7 +322,7 @@ export default class ContractRegister extends Component {
 
     //-----------------------수주 가능한 견적 조회------------------------
     console.log("렌더링 됨");
-    this.searchEstimate = () => {
+    this.searchEstimate = async () => {
       let startd = this.state.startdate;
       let endd = this.state.enddate;
 
@@ -369,7 +337,7 @@ export default class ContractRegister extends Component {
           startd +
           "&endDate=" +
           endd;
-        axios
+        await axios
           .get(url)
           .then(response => {
             console.log(
@@ -391,12 +359,21 @@ export default class ContractRegister extends Component {
       }
     };
 
-    /*  this.contractSubmit = e => {
-      console.log("===============contractSubmit()==================");
-      
-      this.props.onSubmit(this.state.statusName);
-    }; */
+    // -------------------- 선택한 견적 + 견적상세 = batchList 만들기 ------------------------------------//
+    this.batchList = () => {
+      console.log("=============batchList() 호출==============");
+      let selected_data = this.state.selectedData.estimateDetailTOList;
 
+      this.setState({
+        selected_data: this.state.selectedDetailData,
+      });
+      console.log(
+        " batchList () - this.state.selectedData.estimateDetailTOList>>",
+        selected_data,
+      );
+
+      // return this.state.batchlist;
+    };
     // =====================수주 등록하기===================
     this.contractRegist = async e => {
       let today = new Date();
@@ -422,38 +399,57 @@ export default class ContractRegister extends Component {
           parseInt(today.getMonth() + 1) +
           "-" +
           today.getDate();
-        let selecteddata = JSON.stringify(this.state.selectedData);
+        let selecteddata = this.state.selectedData;
         let charge = this.state.inchargeCode;
-        console.log("수주등록  - 선택된 데이터 >> ", selecteddata);
+        let selectedDetaildata = this.state.rowDetailData[0];
+        let status = this.state.status1;
+        // let newdata = selecteddata.estimateDetailTOList;
+        // let newdata = this.state.selectedData.estimateDetailTOList.key;
+        // newdata 를 props에도 저장해놓음
+        /* this.setState({
+          newdata: selecteddata.map(data=>data.estimateDetailTOList===null?{...data,...selectedDetaildata}:data)
+
+        }); */
+        console.log(
+          "수주등록  - 선택된 데이터(selecteddata) >> ",
+          selecteddata,
+        );
         console.log(
           "수주등록  - 선택됨? this.state.selectable >> ",
           this.state.selectable,
         );
-        console.log("수주등록  -  오늘 날짜  --->", date);
-        console.log("수주등록  -  담당자코드 >>", charge);
+        console.log("수주등록  -  오늘 날짜(date)  --->", date);
+        console.log(
+          "수주등록  -  담당자코드(this.state.inchargeCode) >>",
+          charge,
+        );
+        console.log(
+          "수주등록 - 선택된 견적상세 (selectedDetaildata)>>",
+          selectedDetaildata,
+        );
+        console.log("수주>>>>", status);
+
         //let url = "http://localhost:8282/logi/logistics/sales/addNewContract";
 
         await axios
-          .put(this.state.contractUrl, {
-            batchList: selecteddata,
+          .post(this.state.contractUrl, {
             contractDate: date,
             personCodeInCharge: charge,
-            headers: { "Access-Control-Allow-Origin": "*" }, //cors보안
+            contractStatus: status,
           })
-          /*   .options("/", (req, res) => {
-            res.header("Access-Control-Allow-Origin", "*");
-            res.header(
+
+          .then((req, response) => {
+            console.log("response >> ", response);
+            response.headers("Access-Control-Allow-Origin", "*");
+            response.headers(
               "Access-Control-Allow-Methods",
               "GET,PUT,POST,DELETE,OPTIONS",
             );
-            res.header(
+            response.headers(
               "Access-Control-Allow-Headers",
               "Content-Type, Authorization, Content-Length, X-Requested-With",
             );
-            res.send();
-          }) */
-          .then(response => {
-            console.log("response >> ", response);
+            response.send();
           })
           .catch(error => {
             console.log("견적 수주로 등록하다가 에러 >> ", error);
@@ -521,6 +517,7 @@ export default class ContractRegister extends Component {
 
   render() {
     return (
+      <React.Fragment>
       <>
         <br />
         <div>
@@ -582,7 +579,10 @@ export default class ContractRegister extends Component {
         <hr className="hr" styele={hrStyle} />
         <br />
         <div>
-          <Typography className="estimateDetail" style={estimateDetailStyle}>
+          <Typography
+            className="estimateDetailHeader"
+            style={estimateDetailStyle}
+          >
             견적 상세조회
           </Typography>
           <br />
@@ -593,7 +593,7 @@ export default class ContractRegister extends Component {
               className={theme}
               rowSelection={single}
               rowData={this.state.rowDetailData}
-              columnDefs={this.estimateDetail} /*rowData={this.rowData} */
+              columnDefs={this.estimateDetailHeader} /*rowData={this.rowData} */
               frameworkComponents={{
                 itemName: this.itemNameEditor,
                 dueDate: this.dueDateEditor,
@@ -606,6 +606,7 @@ export default class ContractRegister extends Component {
           </div>
         </div>
       </>
+      </React.Fragment>
     );
   }
 }

@@ -180,31 +180,57 @@ const rowData = {
   /* 수주 가능한 견적 조회 버튼 누르면 데이터 들고오는 함수 */
 };
 
-const searchContract = e => {};
-
 const ContractInfo = ({ estimateNo, setEstimateNo }) => {
   const classes = useStyles();
-  const startDate = useInput();
-  const endDate = useInput();
-  const rowSelection = "single";
+  const single = "single";
 
   const [url, setUrl] = useState("");
   const [{ data }, refetch] = useAxios(url);
+  const [estimateGridApi, setEstimateGridApi] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-  // 견적번호를 파라미터로 가져온다.
-  /*  useEffect(()=>{
-    // console.log("자식태그 리렌더링")
-    setUrl('logi/business/findEstimateDetail?estimateNo='+estimateNo);
-    refetch();
-  },[estimateNo]); */
+  function gridReady(params) {
+    console.log("----- gridReady() 호출 -----");
 
+    setEstimateGridApi(params.api);
+  }
+
+  const startDateChange = e => {
+    //  console.log("startDateChange() 호출 - e.target.value -->", e.target.value);
+
+    setStartDate(e.target.value);
+  };
+  console.log("시작날짜>>", startDate);
+
+  const endDateChange = e => {
+    // console.log("endDateChange()호출 - e.target.value -->", e.target.value);
+
+    setEndDate(e.target.value);
+  };
+  console.log("종료날짜>>", endDate);
+
+  // ------------------------ 수주검색------------------------------
+  const searchContract = e => {
+    console.log("=========수주검색======");
+    console.log("searchContract() 수주검색 ---- ");
+    let startd = startDate;
+    let endd = endDate;
+    if (startd || endd === "") {
+      alert("날짜를 입력해 주세요");
+      return;
+    }
+    let url = ""
+  };
+
+  /* 
   const onRowSelected = e => {
     if (e.node.selected) {
       console.log("node 선택됨 >", e.node.selected);
 
       setEstimateNo(e.data.estimateNo);
     }
-  };
+  }; */
 
   return (
     <React.Fragment>
@@ -215,17 +241,17 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
             <TextField
               id={"startDate"}
               type="date"
-              defaultValue={startDate.value}
-              onChange={startDate.onChange}
-              rowSelection={rowSelection}
+              value={startDate}
+              onChange={startDateChange}
+              rowSelection={single}
             ></TextField>
 
             <Typography className={classes.labelStyle}>종료일</Typography>
             <TextField
               id={"endDate"}
               type="date"
-              defaultValue={endDate.value}
-              onChange={endDate.onChange}
+              value={endDate}
+              onChange={endDateChange}
             ></TextField>
           </div>
           &nbsp;&nbsp;
@@ -238,10 +264,11 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
         <div className="contract_body">
           <div className={"ag-theme-material"} style={gridFrameStyle}>
             <AgGridReact
+              onGridReady={gridReady}
               columnDefs={headerName}
               style={gridStyle}
-              rowSelection={rowSelection}
-              onRowSelected={onRowSelected}
+              rowSelection={single}
+              /*   onRowSelected={onRowSelected} */
               rowData={data}
             />
           </div>
@@ -253,10 +280,11 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
           <hr className={classes.hrStyle} />
           <div className={"ag-theme-material"} style={gridFrameStyle}>
             <AgGridReact
+              onGridReady={gridReady}
               columnDefs={contractDetailName}
               style={gridStyle}
-              rowSelection={rowSelection}
-              onRowSelected={onRowSelected}
+              rowSelection={single}
+              /*   onRowSelected={onRowSelected} */
               rowData={data}
             />
           </div>

@@ -51,7 +51,8 @@ function Layout(props) {
            /> */}
             <Route
               exact
-              path="/app/sales/Contract" //경로 이렇게 안하면 안나옴.. 다른거 고쳐야 할듯
+              path="/app/logi/sales/contractRegister"
+              //경로 이렇게 안하면 안나옴.. 다른거 고쳐야 할듯
               component={logistic.contract}
             />{" "}
             {/* 물 류 */}

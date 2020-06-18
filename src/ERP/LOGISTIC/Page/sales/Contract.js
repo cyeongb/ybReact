@@ -5,6 +5,14 @@ import { makeStyles } from "@material-ui/styles";
 import Box from "@material-ui/core/Box";
 import ContractRegister from "./ContractRegister";
 import ContractInfo from "./ContractInfo";
+/* #######################################     수         주          페       이       지    #################################################
+   ###########################################################################################################################################
+   * 수주 페이지를 수주 등록과 수주 조회로 나눴음.
+   * 수주 등록 : 날짜별로 조회하여 해당 견적을 가져와서 일반수주로 등록(원래는 긴급수주도 있어야 하나 긴급수주는 구현이 안되어있음.)
+   * 하고 해당 견적의 상세를 batchList로 합쳐서 수주로 등록한다.
+   * 수주조회 : 수주등록 페이지에서 등록한 수주르 조회하는 페이지.
+   * *** 함수형 + 클래스형을 믹스해서 구현했습니다. 
+   ###########################################################################################################################################*/
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -26,13 +34,14 @@ function TabPanel(props) {
   );
 }
 
-const useStyles = makeStyles(theme => ({
-  bar: {
-    backgroundColor: "gray",
-  },
-}));
-
 const Contract = () => {
+  const useStyles = makeStyles(theme => ({
+    bar: {
+      backgroundColor: "gray",
+    },
+  }));
+  const classes = useStyles();
+
   const [estimateNo, setEstimateNo] = useState(""); //견적번호
   const [contractNo, setContractNo] = useState(""); // 수주번호
   const [value, setState] = useState(0);
@@ -56,7 +65,6 @@ const Contract = () => {
       "aria-controls": `simple-tabpanel-${index}`,
     };
   }
-  const classes = useStyles();
 
   return (
     <React.Fragment>
