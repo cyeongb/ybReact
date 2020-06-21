@@ -7,6 +7,11 @@ import "ag-grid-community/dist/styles/ag-grid.css";
 import axios from "axios";
 import { makeUseAxios } from "axios-hooks";
 
+/* ########################  수        주         조        회        페       이       지    #################################################
+   ###########################################################################################################################################
+   ######## 등록한 견적 데이터들을 날짜별로 조회해서 해당 견적과 + 견적 상세 데이터를 batchList로 합쳐서 수주로 등록하는 기능을 하는 페이지. ##########
+   ###########################################################################################################################################*/
+
 const useAxios = makeUseAxios({
   axios: axios.create({ baseURL: "http://localhost:8282/" }),
 });
@@ -176,10 +181,6 @@ const contractDetailName = [
   },
 ];
 
-const rowData = {
-  /* 수주 가능한 견적 조회 버튼 누르면 데이터 들고오는 함수 */
-};
-
 const ContractInfo = ({ estimateNo, setEstimateNo }) => {
   const classes = useStyles();
   const single = "single";
@@ -189,6 +190,8 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
   const [estimateGridApi, setEstimateGridApi] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [rowData, setRowData] = useState("");
+  const [rowDetailData, setRowDetailData] = useState("");
 
   function gridReady(params) {
     console.log("----- gridReady() 호출 -----");
@@ -216,21 +219,64 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
     console.log("searchContract() 수주검색 ---- ");
     let startd = startDate;
     let endd = endDate;
-    if (startd || endd === "") {
+    if (startd && endd === "") {
       alert("날짜를 입력해 주세요");
       return;
     }
-    let url = ""
+    let url = "http://localhost:8282/logi/logistics/sales/searchContract";
+
+    const getData = async () =>
+      await axios({
+        method: "POST",
+        url: url,
+        headers: {
+          "content-type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        params: { startDate: startd, endDate: endd },
+      });
+
+    getData().then(response => {
+      console.log(
+        "axios동작해서 나온 response.data ---> ",
+        response.data.gridRowJson,
+      );
+      setRowData(response.data.gridRowJson);
+    });
   };
 
-  /* 
-  const onRowSelected = e => {
-    if (e.node.selected) {
-      console.log("node 선택됨 >", e.node.selected);
+  const rowClicked = e => {
+    console.log("======= 수주 상세 나오나 ========");
+    console.log("해당 수주번호 :: e.data.contractNo >>> ", e.data.contractNo);
 
-      setEstimateNo(e.data.estimateNo);
+    if (e.data.contractNo === "") {
+      alert(
+        "수주번호가 없으면 조회할 수 없습니다 해당 수주의 견적을 다시 만들어 주세요",
+      );
+      return;
     }
-  }; */
+
+    let url = "http://localhost:8282/logi/logistics/sales/searchContractDetail";
+
+    console.log("여기와 ??? ");
+
+    const getDetailData = async () =>
+      await axios({
+        method: "POST",
+        url: url,
+        headers: {
+          "content-type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        params: { contractNo: e.data.contractNo },
+      });
+
+    getDetailData().then(response => {
+      console.log("response.data.gridRowJson>>", response.data.gridRowJson);
+      // response.headers("Access-Control-Allow-Origin", "*");
+      setRowDetailData(response.data.gridRowJson);
+    });
+  };
 
   return (
     <React.Fragment>
@@ -268,8 +314,8 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
               columnDefs={headerName}
               style={gridStyle}
               rowSelection={single}
-              /*   onRowSelected={onRowSelected} */
-              rowData={data}
+              onRowClicked={rowClicked}
+              rowData={rowData}
             />
           </div>
           <br />
@@ -284,8 +330,7 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
               columnDefs={contractDetailName}
               style={gridStyle}
               rowSelection={single}
-              /*   onRowSelected={onRowSelected} */
-              rowData={data}
+              rowData={rowDetailData}
             />
           </div>
         </div>
