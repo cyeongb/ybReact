@@ -11,11 +11,13 @@ import { makeUseAxios } from "axios-hooks";
    ###########################################################################################################################################
    ######## 등록한 견적 데이터들을 날짜별로 조회해서 해당 견적과 + 견적 상세 데이터를 batchList로 합쳐서 수주로 등록하는 기능을 하는 페이지. ##########
    ###########################################################################################################################################*/
-
+/* 
 const useAxios = makeUseAxios({
   axios: axios.create({ baseURL: "http://localhost:8282/" }),
-});
+}); 
+*/
 
+/* 
 function useInput(initialValue) {
   const [value, setValue] = useState(initialValue);
   const onChange = event => {
@@ -27,7 +29,8 @@ function useInput(initialValue) {
   };
 
   return { value, onChange, setValue: set };
-}
+} */
+
 const useStyles = makeStyles(theme => ({
   btnSearch: {
     fontSize: "1.3rem",
@@ -185,8 +188,6 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
   const classes = useStyles();
   const single = "single";
 
-  const [url, setUrl] = useState("");
-  const [{ data }, refetch] = useAxios(url);
   const [estimateGridApi, setEstimateGridApi] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -197,6 +198,8 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
     console.log("----- gridReady() 호출 -----");
 
     setEstimateGridApi(params.api);
+    console.log("estimateGridApi >>>", estimateGridApi);
+    return estimateGridApi;
   }
 
   const startDateChange = e => {
@@ -236,13 +239,17 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
         params: { startDate: startd, endDate: endd },
       });
 
-    getData().then(response => {
-      console.log(
-        "axios동작해서 나온 response.data ---> ",
-        response.data.gridRowJson,
-      );
-      setRowData(response.data.gridRowJson);
-    });
+    getData()
+      .then(response => {
+        console.log(
+          "axios동작해서 나온 response.data ---> ",
+          response.data.gridRowJson,
+        );
+        setRowData(response.data.gridRowJson);
+      })
+      .catch(e => {
+        console.log("수주조회하다가 발생한 에러 >> ", e);
+      });
   };
 
   const rowClicked = e => {
@@ -271,71 +278,73 @@ const ContractInfo = ({ estimateNo, setEstimateNo }) => {
         params: { contractNo: e.data.contractNo },
       });
 
-    getDetailData().then(response => {
-      console.log("response.data.gridRowJson>>", response.data.gridRowJson);
-      // response.headers("Access-Control-Allow-Origin", "*");
-      setRowDetailData(response.data.gridRowJson);
-    });
+    getDetailData()
+      .then(response => {
+        console.log("response.data.gridRowJson>>", response.data.gridRowJson);
+        // response.headers("Access-Control-Allow-Origin", "*");
+        setRowDetailData(response.data.gridRowJson);
+      })
+      .catch(e => {
+        console.log("수주 상세조회하다가 발생한 에러 >>", e);
+      });
   };
 
   return (
-    <React.Fragment>
-      <>
-        <div className="contract_header">
-          <div className={classes.cal}>
-            <Typography className={classes.labelStyle}>시작일</Typography>
-            <TextField
-              id={"startDate"}
-              type="date"
-              value={startDate}
-              onChange={startDateChange}
-              rowSelection={single}
-            ></TextField>
+    <>
+      <div className="contract_header">
+        <div className={classes.cal}>
+          <Typography className={classes.labelStyle}>시작일</Typography>
+          <TextField
+            id={"startDate"}
+            type="date"
+            value={startDate}
+            onChange={startDateChange}
+            rowSelection={single}
+          ></TextField>
 
-            <Typography className={classes.labelStyle}>종료일</Typography>
-            <TextField
-              id={"endDate"}
-              type="date"
-              value={endDate}
-              onChange={endDateChange}
-            ></TextField>
-          </div>
-          &nbsp;&nbsp;
-          <Button className={classes.btnSearch} onClick={searchContract}>
-            수주 조회
-          </Button>
+          <Typography className={classes.labelStyle}>종료일</Typography>
+          <TextField
+            id={"endDate"}
+            type="date"
+            value={endDate}
+            onChange={endDateChange}
+          ></TextField>
+        </div>
+        &nbsp;&nbsp;
+        <Button className={classes.btnSearch} onClick={searchContract}>
+          수주 조회
+        </Button>
+      </div>
+      <br />
+      <hr className={classes.hrStyle} />
+      <div className="contract_body">
+        <div className={"ag-theme-material"} style={gridFrameStyle}>
+          <AgGridReact
+            onGridReady={gridReady}
+            columnDefs={headerName}
+            style={gridStyle}
+            rowSelection={single}
+            onRowClicked={rowClicked}
+            rowData={rowData}
+          />
         </div>
         <br />
         <hr className={classes.hrStyle} />
-        <div className="contract_body">
-          <div className={"ag-theme-material"} style={gridFrameStyle}>
-            <AgGridReact
-              onGridReady={gridReady}
-              columnDefs={headerName}
-              style={gridStyle}
-              rowSelection={single}
-              onRowClicked={rowClicked}
-              rowData={rowData}
-            />
-          </div>
-          <br />
-          <hr className={classes.hrStyle} />
-          <br />
-          <Typography className={classes.name}>수주상세조회</Typography>
-          <br />
-          <hr className={classes.hrStyle} />
-          <div className={"ag-theme-material"} style={gridFrameStyle}>
-            <AgGridReact
-              onGridReady={gridReady}
-              columnDefs={contractDetailName}
-              style={gridStyle}
-              rowSelection={single}
-              rowData={rowDetailData}
-            />
-          </div>
+        <br />
+        <Typography className={classes.name}>수주상세조회</Typography>
+        <br />
+        <hr className={classes.hrStyle} />
+        <div className={"ag-theme-material"} style={gridFrameStyle}>
+          <AgGridReact
+            onGridReady={gridReady}
+            columnDefs={contractDetailName}
+            style={gridStyle}
+            rowSelection={single}
+            rowData={rowDetailData}
+          />
         </div>
-      </>
-    </React.Fragment>
+      </div>
+    </>
   );
 };
 

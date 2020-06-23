@@ -95,7 +95,7 @@ export default class ContractRegister extends Component {
       statusName: "", // 수주 유형
       selectedData: [], //클릭한 row데이터
       selectedDetailData: [], // 클릭한 row의 상세 데이터
-      selectable: false, // 선택 여부
+      selected: false, // 선택 여부
       inchargeCode: "", //담당자 코드
       contractUrl: "http://localhost:8282/logi/logistics/sales/addNewContract", //수주 등록 url
       batchlist: [],
@@ -140,7 +140,7 @@ export default class ContractRegister extends Component {
         console.log("===== valuegetter() 호출 ======");
         console.log(
           "valueGetter  - params.data.contractStatus>",
-          JSON.stringify(params.data.contractStatus),
+          params.data.contractStatus,
         );
 
         return params.data.contractStatus;
@@ -286,22 +286,27 @@ export default class ContractRegister extends Component {
 
         this.setState({
           selectedData: e.data,
-          selectable: e.node.selectable,
+          selected: e.node.selected,
           inchargeCode: e.data.personCodeInCharge,
           selectedDetailData: this.state.rowDetailData[0],
         });
+        if (this.state.selectedDetailData === "") {
+          alert("현재 견적은 견적상세 작성이 되지 않았습니다");
+          return;
+        }
 
         this.estimateno = e.data.estimateNo;
+        console.log("this.estimateno-->", this.estimateno); //잘받아옴
         let url =
           "http://localhost:8282/logi/logistics/sales/estimateDetail?estimateNo=" +
           this.estimateno;
         await axios
           .post(url)
           .then(response => {
-            //console.log("response>>", response);
+            console.log("response>>", response);
 
             this.setState({
-              rowDetailData: response.data.gridRowJson,
+              rowDetailData: response.data.gridRowJson, // null나옴
             });
             console.log(
               "@@@@@@this.state.rowDetailData >> ",
@@ -375,14 +380,14 @@ export default class ContractRegister extends Component {
       // return this.state.batchlist;
     };
     // =====================수주 등록하기===================
-    this.contractRegist = async e => {
+    this.contractRegist = e => {
       let today = new Date();
-      if (this.state.selectable === false) {
+      if (this.state.selected === false) {
         alert("등록할 견적을 선택해 주세요");
-        console.log("selectable이 false인가??>>", this.state.selectable);
+        console.log("selected이 false인가??>>", this.state.selected);
         return;
       }
-      if (this.state.selectable === true) {
+      if (this.state.selected === true) {
         let s = window.confirm(
           this.state.selectedData.estimateNo + "견적을 등록 하시겠습니까?",
         );
@@ -415,8 +420,8 @@ export default class ContractRegister extends Component {
           selecteddata,
         );
         console.log(
-          "수주등록  - 선택됨? this.state.selectable >> ",
-          this.state.selectable,
+          "수주등록  - 선택됨? this.state.selected >> ",
+          this.state.selected,
         );
         console.log("수주등록  -  오늘 날짜(date)  --->", date);
         console.log(
@@ -431,25 +436,25 @@ export default class ContractRegister extends Component {
 
         //let url = "http://localhost:8282/logi/logistics/sales/addNewContract";
 
-        await axios
-          .post(this.state.contractUrl, {
-            contractDate: date,
-            personCodeInCharge: charge,
-            contractStatus: status,
-          })
+        const getData = async () => {
+          await axios({
+            method: "POST",
+            url: this.state.contractUrl,
+            headers: {
+              "content-type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+            params: {
+              contractDate: date,
+              personCodeInCharge: charge,
+              contractStatus: status,
+            },
+          });
+        };
 
-          .then((req, response) => {
-            console.log("response >> ", response);
-            response.headers("Access-Control-Allow-Origin", "*");
-            response.headers(
-              "Access-Control-Allow-Methods",
-              "GET,PUT,POST,DELETE,OPTIONS",
-            );
-            response.headers(
-              "Access-Control-Allow-Headers",
-              "Content-Type, Authorization, Content-Length, X-Requested-With",
-            );
-            response.send();
+        getData()
+          .then(response => {
+            console.log("수주등록 response >> ", response);
           })
           .catch(error => {
             console.log("견적 수주로 등록하다가 에러 >> ", error);
@@ -517,7 +522,6 @@ export default class ContractRegister extends Component {
 
   render() {
     return (
-      <React.Fragment>
       <>
         <br />
         <div>
@@ -606,7 +610,6 @@ export default class ContractRegister extends Component {
           </div>
         </div>
       </>
-      </React.Fragment>
     );
   }
 }
